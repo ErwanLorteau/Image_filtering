@@ -4,11 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Filter initializeFilter() {
-    struct Filter filter;
+Filter binomial_filter() {
+    Filter filter;
     filter.size_m = 3;
     filter.size_n = 3;
-    filter.weigth = 9;
+    filter.weigth = 16;
     int filterArray[9] = {1, 2, 1, 2, 4, 2, 1, 2, 1};
     filter.filterArray = filterArray;
     return filter;
@@ -17,7 +17,7 @@ struct Filter initializeFilter() {
 FILE *openFile(char *fileName) {
     FILE *ifp = fopen(fileName, "r");
     if (ifp == NULL) {
-        printf("Error opening the file");
+        printf("Error opening the file\n");
         exit(1);
     } else {
         return ifp;
@@ -25,7 +25,7 @@ FILE *openFile(char *fileName) {
 }
 
 
-int readPPM(FILE *ifp, gray **graymap, int *n, int *m) {
+int readPPM(FILE *ifp, gray **graymap, int *n, int *m, int *max) {
     /* Magic number reading */
     int ich1, ich2, maxval = 255, cols, rows, pgmraw;
     int i, j;
@@ -46,7 +46,7 @@ int readPPM(FILE *ifp, gray **graymap, int *n, int *m) {
     /* Reading image dimensions */
     cols = pm_getint(ifp);
     rows = pm_getint(ifp);
-    printf("%d %d \n" , cols, rows) ;
+    //printf("%d %d \n" , cols, rows) ;
     maxval = pm_getint(ifp);
 
     /* Memory allocation  */
@@ -57,7 +57,7 @@ int readPPM(FILE *ifp, gray **graymap, int *n, int *m) {
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             if (pgmraw) {
-                (*graymap)[i * cols + j] = pm_getrawbyte(ifp); //!
+                (*graymap)[i * cols + j] = pm_getrawbyte(ifp);
             } else {
                 (*graymap)[i * cols + j] = pm_getint(ifp);
             }
@@ -66,6 +66,7 @@ int readPPM(FILE *ifp, gray **graymap, int *n, int *m) {
 
     *n = cols;
     *m = rows;
+    *max = maxval;
     return pgmraw;
 }
 
@@ -80,7 +81,7 @@ gray* deepCopyImage(gray* graymap, int nbRows, int nbCols) {
     gray* deepCopy = malloc (sizeof (gray) * nbCols * nbRows ) ;
     for (int i = 0; i < nbRows; i++) {
         for (int j = 0; j < nbCols; j++) {
-            deepCopy[ (nbRows * i) + nbCols ] =  graymap[ (nbRows * i) + nbCols] ;
+            deepCopy[nbCols * i + j] =  graymap[nbCols * i + j] ;
         }
     }
     return deepCopy ;
@@ -116,10 +117,10 @@ filterWeigth(struct Filter filter) {
 }
  **/
 
-gray* applyFilter(gray* old, gray* modified, int nbRows, int nbCols, struct Filter filter) {
+void applyFilter(gray* old, gray* modified, int nbRows, int nbCols, Filter filter) {
     /**Make a copy in buffer**/
 
-    gray* filteredImage = malloc(nbRows * nbCols) ;
+    //gray* filteredImage = malloc(nbRows * nbCols) ;
 
     /**
      * A B C
@@ -130,35 +131,56 @@ gray* applyFilter(gray* old, gray* modified, int nbRows, int nbCols, struct Filt
     for (int i = 0; i < nbRows ; i++) {
         for (int j = 0; j < nbCols; j++) {
 
-            if (j>=1 && i>=1 ) {
-                modified[(i * nbRows) + j] = (
-                                                     (filter.filterArray[0] * old[(i * nbRows - 1) + j - 1]) + //A
-                                                     (filter.filterArray[1] * old[(i * nbRows - 1) + j]) + //B
-                                                     (filter.filterArray[2] * old[(i * nbRows - 1) + j + 1]) + //C
+            if (j>=1 && i>=1 && j<nbCols-1 && i<nbRows-1) {
+                modified[i * nbCols + j] = (
+                                                     (filter.filterArray[0] * old[(i - 1) * nbCols + (j - 1)]) + //A
+                                                     (filter.filterArray[1] * old[(i - 1) * nbCols + j]) + //B
+                                                     (filter.filterArray[2] * old[(i - 1) * nbCols + (j + 1)]) + //C
 
-                                                     (filter.filterArray[3] * old[(i * nbRows) + j - 1]) + //D
-                                                     (filter.filterArray[4] * old[(i * nbRows) + j]) +  //E
-                                                     (filter.filterArray[5] * old[(i * nbRows) + j + 1]) + //F
+                                                     (filter.filterArray[3] * old[i * nbCols + (j - 1)]) + //D
+                                                     (filter.filterArray[4] * old[i * nbCols + j]) +  //E
+                                                     (filter.filterArray[5] * old[i * nbCols + (j + 1)]) + //F
 
-                                                     (filter.filterArray[6] * old[(i * nbRows + 1) + j - 1]) + //G
-                                                     (filter.filterArray[7] * old[(i * nbRows + 1) + j]) + //H
-                                                     (filter.filterArray[8] * old[(i * nbRows + 1) + j + 1])  //I
+                                                     (filter.filterArray[6] * old[(i + 1) * nbCols + (j - 1)]) + //G
+                                                     (filter.filterArray[7] * old[(i + 1) * nbCols + j]) + //H
+                                                     (filter.filterArray[8] * old[(i + 1) * nbCols + (j + 1)])  //I
                                              ) / filter.weigth;
             }
         }
     }
-    return filteredImage ;
+    //return filteredImage ;
 }
 
 
 
 /***Output functions***/
 FILE *createFile(char *name) {
-    return fopen(name, 'w');
+    return fopen(name, "w");
 }
 
-void writeInFile(FILE *fp, char *str) {
-    fputs(str, fp);
+void writeInFile(FILE *fp, gray* graymap, int pgmraw, int nbCols, int nbRows, int maxval) {
+    //fputs(str, fp);
+
+    if(pgmraw)
+      fprintf(fp, "P2\n");
+    else
+      fprintf(fp, "P5\n");
+
+    fprintf(fp, "%d %d \n", nbCols, nbRows);
+    fprintf(fp, "%d\n",maxval);
+
+    for(int i=0; i < nbRows; i++)
+      for(int j=0; j < nbCols ; j++){
+        if(pgmraw)
+          fprintf(fp,"%d ", graymap[i * nbCols + j]);
+        else
+          fprintf(fp,"%c",graymap[i * nbCols+ j]);
+      }
+        /*putc(graymap[i * cols + j],stdout);*/
+
+
+    /* Closing */
+    fclose(fp);
 }
 
 
@@ -168,7 +190,7 @@ void writeInFile(FILE *fp, char *str) {
 void printImage(gray* graymap, int nbRows, int nbCols) {
     for (int i = 0; i < nbRows; i++) {
         for (int j = 0; j < nbCols; j++) {
-            printf("%c", graymap[i * nbCols + j]);
+            printf("%d", graymap[i * nbCols + j]);
         }
     }
 }
@@ -178,7 +200,7 @@ void printImage(gray* graymap, int nbRows, int nbCols) {
  */
 void initGuard(int argc) {
     if (argc != 2) {
-        pm_erreur("Cannot find image");
+        pm_erreur("Usage: ./filter image.pgm");
         exit(1);
     }
 }
@@ -189,21 +211,24 @@ int main(int argc, char *argv[]) {
     initGuard(argc) ;
 
     FILE *file = openFile(argv[1]);
-    struct Filter filter = initializeFilter() ;
+    Filter filter = binomial_filter() ;
 
-    int pgmraw, nbRows, nbCols;
+    int pgmraw, nbRows, nbCols, maxval;
     gray *graymap ;
+
      /**Read**/
-    pgmraw = readPPM(file, &graymap, &nbRows, &nbRows);
+    pgmraw = readPPM(file, &graymap, &nbCols, &nbRows, &maxval);
     printf("%d %d", nbRows, nbCols) ;
+    
     /**Copy**/
-    gray* copy = deepCopyImage(pgmraw, nbRows, nbRows) ;
+    gray* copy = deepCopyImage(graymap, nbRows, nbCols) ;
+    //printImage(copy, nbRows, nbCols);
 
     /**Applying the filter**/
-    applyFilter(pgmraw, copy, nbRows, nbCols, filter) ;
+    //applyFilter(graymap, copy, nbRows, nbCols, filter) ;
 
     /**Creating an output file**/
-    FILE* newImage = createFile("newImage.ppm") ;
-    writeInFile(newImage, copy) ;
+    FILE* newImage = createFile("newImage.pgm") ;
+    writeInFile(newImage, copy, pgmraw, nbCols, nbRows, maxval) ;
     return 0;
 }
