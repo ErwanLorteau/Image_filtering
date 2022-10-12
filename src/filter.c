@@ -133,17 +133,17 @@ void applyFilter(gray* old, gray* modified, int nbRows, int nbCols, Filter filte
 
         if (j>=1 && i>=1 && j<nbCols-1 && i<nbRows-1) {
                 modified[i * nbCols + j] = (
-                                                     (filter.filterArray[0] * old[(i - 1) * nbCols + (j - 1)]) + //A
-                                                     (filter.filterArray[1] * old[(i - 1) * nbCols + j]) + //B
-                                                     (filter.filterArray[2] * old[(i - 1) * nbCols + (j + 1)]) + //C
+                                                     (old[(i - 1) * nbCols + (j - 1)]) + //A
+                                                     (2 * old[(i - 1) * nbCols + j]) + //B
+                                                     (old[(i - 1) * nbCols + (j + 1)]) + //C
 
-                                                     (filter.filterArray[3] * old[i * nbCols + (j - 1)]) + //D
-                                                     (filter.filterArray[4] * old[i * nbCols + j]) +  //E
-                                                     (filter.filterArray[5] * old[i * nbCols + (j + 1)]) + //F
+                                                     (2 * old[i * nbCols + (j - 1)]) + //D
+                                                     (4 * old[i * nbCols + j]) +  //E
+                                                     (2 * old[i * nbCols + (j + 1)]) + //F
 
-                                                     (filter.filterArray[6] * old[(i + 1) * nbCols + (j - 1)]) + //G
-                                                     (filter.filterArray[7] * old[(i + 1) * nbCols + j]) + //H
-                                                     (filter.filterArray[8] * old[(i + 1) * nbCols + (j + 1)])  //I
+                                                     (old[(i + 1) * nbCols + (j - 1)]) + //G
+                                                     (2 * old[(i + 1) * nbCols + j]) + //H
+                                                     (old[(i + 1) * nbCols + (j + 1)])  //I
                                              ) / filter.weigth;
             }
         }
@@ -225,6 +225,8 @@ int main(int argc, char *argv[]) {
     //printImage(copy, nbRows, nbCols);
 
     /**Applying the filter**/
+    applyFilter(graymap, copy, nbRows, nbCols, filter) ;
+    applyFilter(copy, graymap, nbRows, nbCols, filter) ;
     applyFilter(graymap, copy, nbRows, nbCols, filter) ;
 
     /**Creating an output file**/
