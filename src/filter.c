@@ -25,7 +25,7 @@ FILE *openFile(char *fileName) {
 }
 
 
-int readPPM(FILE *ifp, gray **graymap, int *n, int *m, int *max) {
+int readPGM(FILE *ifp, gray **graymap, int *n, int *m, int *max) {
     /* Magic number reading */
     int ich1, ich2, maxval = 255, cols, rows, pgmraw;
     int i, j;
@@ -131,7 +131,7 @@ void applyFilter(gray* old, gray* modified, int nbRows, int nbCols, Filter filte
     for (int i = 0; i < nbRows ; i++) {
         for (int j = 0; j < nbCols; j++) {
 
-            if (j>=1 && i>=1 && j<nbCols-1 && i<nbRows-1) {
+        if (j>=1 && i>=1 && j<nbCols-1 && i<nbRows-1) {
                 modified[i * nbCols + j] = (
                                                      (filter.filterArray[0] * old[(i - 1) * nbCols + (j - 1)]) + //A
                                                      (filter.filterArray[1] * old[(i - 1) * nbCols + j]) + //B
@@ -162,9 +162,9 @@ void writeInFile(FILE *fp, gray* graymap, int pgmraw, int nbCols, int nbRows, in
     //fputs(str, fp);
 
     if(pgmraw)
-      fprintf(fp, "P2\n");
+       fprintf(fp, "P2\n");
     else
-      fprintf(fp, "P5\n");
+        fprintf(fp, "P5\n");
 
     fprintf(fp, "%d %d \n", nbCols, nbRows);
     fprintf(fp, "%d\n",maxval);
@@ -172,9 +172,9 @@ void writeInFile(FILE *fp, gray* graymap, int pgmraw, int nbCols, int nbRows, in
     for(int i=0; i < nbRows; i++)
       for(int j=0; j < nbCols ; j++){
         if(pgmraw)
-          fprintf(fp,"%d ", graymap[i * nbCols + j]);
+           fprintf(fp,"%d ", graymap[i * nbCols + j]);
         else
-          fprintf(fp,"%c",graymap[i * nbCols+ j]);
+            fprintf(fp,"%c",graymap[i * nbCols+ j]);
       }
         /*putc(graymap[i * cols + j],stdout);*/
 
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
     gray *graymap ;
 
      /**Read**/
-    pgmraw = readPPM(file, &graymap, &nbCols, &nbRows, &maxval);
+    pgmraw = readPGM(file, &graymap, &nbCols, &nbRows, &maxval);
     printf("%d %d", nbRows, nbCols) ;
     
     /**Copy**/
@@ -225,10 +225,10 @@ int main(int argc, char *argv[]) {
     //printImage(copy, nbRows, nbCols);
 
     /**Applying the filter**/
-    //applyFilter(graymap, copy, nbRows, nbCols, filter) ;
+    applyFilter(graymap, copy, nbRows, nbCols, filter) ;
 
     /**Creating an output file**/
-    FILE* newImage = createFile("newImage.pgm") ;
+    FILE* newImage = createFile("filter_boat.pgm") ;
     writeInFile(newImage, copy, pgmraw, nbCols, nbRows, maxval) ;
     return 0;
 }
