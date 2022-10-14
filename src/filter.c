@@ -83,15 +83,37 @@ int readPGM(FILE *ifp, gray **graymap, int *n, int *m, int *max) {
     return pgmraw;
 }
 
+int compar (const void * a, const void * b)
+{
+  return (*(int*)a - *(int*)b);
+}
+
+int median(int* filter, int filter_size){
+    qsort(filter, filter_size*filter_size, sizeof(int), compar);
+    return filter[filter_size/2];
+}
+
 void applyOnPixel(gray* old, gray* modified, filter_t filter, int filter_size, int i, int j, int nbCols){
     int result = 0;
     for (int k=0; k<filter_size; k++)
-        for (int l=0; l<filter_size; l++){
+        for (int l=0; l<filter_size; l++){ 
             result += old[(i-(filter_size/2)+k) * nbCols + (j-(filter_size/2)+l)] * filter.filterArray[k * filter_size + l];
         }
 
     modified[i * nbCols + j] = result/filter.weigth;
 }
+
+void applyMedianOnPixel(gray* old, gray* modified, int filter_size, int i, int j, int nbCols){
+    int filter[filter_size*filter_size];
+
+    for (int k=0; k<filter_size; k++)
+        for (int l=0; l<filter_size; l++){
+            filter[k * filter_size + l] = old[(i-(filter_size/2)+k) * nbCols + (j-(filter_size/2)+l)];
+        }
+
+    modified[i * nbCols + j] = median(filter, filter_size);
+}
+
 
 /**
  * Basic version for a  3*3 filter, with padding on the edge (copying th value)
@@ -106,16 +128,21 @@ void applyFilter(gray* old, gray* modified, int nbRows, int nbCols, char filter_
      * G H I
      */
 
-    filter_t filter;
+    filter_t filter; 
+
     switch(filter_type){
-        case 'B':
+        case 'B': {
             if (filter_size == 3){
                 filter = binomial_filter3x3_t;
             } else if (filter_size == 5){
                 filter = binomial_filter5x5_t;
             }
             break;
+        }
 
+        case 'M':
+            break;
+        
         default:
             pm_erreur("Unrecognized filter type");
             exit(-1);
@@ -123,9 +150,11 @@ void applyFilter(gray* old, gray* modified, int nbRows, int nbCols, char filter_
  
     for (int i = 0; i < nbRows ; i++) {
         for (int j = 0; j < nbCols; j++) {
-
-        if (j>=filter_size/2 && i>=filter_size/2 && j<nbCols-filter_size/2 && i<nbRows-filter_size/2) {
-                applyOnPixel(old, modified, filter, filter_size, i, j, nbCols);
+            if (j>=filter_size/2 && i>=filter_size/2 && j<nbCols-filter_size/2 && i<nbRows-filter_size/2) {
+                if (filter_type == 'B') applyOnPixel(old, modified, filter, filter_size, i, j, nbCols);
+                else if (filter_type =='M') applyMedianOnPixel(old, modified, filter_size, i, j, nbCols);
+            } else {
+                modified[i * nbCols + j] = old[i * nbCols + j];
             }
         }
     }
@@ -153,7 +182,7 @@ void writeInFile(FILE *fp, gray* graymap, int pgmraw, int nbCols, int nbRows, in
         if(pgmraw)
            fprintf(fp,"%d ", graymap[i * nbCols + j]);
         else
-            fprintf(fp,"%c",graymap[i * nbCols+ j]);
+            fprintf(fp,"%c",graymap[i * nbCols + j]);
       }
 
     /* Closing */
@@ -212,7 +241,7 @@ int main(int argc, char *argv[]) {
     }
 
     /**Creating an output file**/
-    FILE* newImage = createFile("filtered_boat3x3.pgm") ;
+    FILE* newImage = createFile("result.pgm") ;
     
     if (i%2==1){
         writeInFile(newImage, result, pgmraw, nbCols, nbRows, maxval) ;
