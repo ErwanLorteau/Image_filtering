@@ -211,6 +211,31 @@ void initGuard(int argc) {
     }
 }
 
+int* compute_histogram(gray* graymap, int nbCols, int nbRows, int maxval){
+    int* histogram = (int*)malloc(sizeof(int)*maxval);
+    for(int i=0; i<maxval; i++){
+        histogram[i]=0;
+    }
+    for(int i=0; i<nbRows; i++){
+        for(int j=0; j<nbCols; j++){
+            histogram[graymap[i * nbCols + j]-1]++;
+        }
+    }
+    return histogram;
+}
+
+int* compute_cumulative_histogram(int* histogram, int maxval){
+    int* cumulative_histogram = (int*)malloc(sizeof(int)*maxval);
+    int sum;
+    for(int i=0; i<maxval; i++){
+        sum = 0;
+        for(int j=0; j<=i; j++){
+            sum += histogram[j]; 
+        }
+        cumulative_histogram[i]=sum;
+    }
+    return cumulative_histogram;
+}
 
 
 int main(int argc, char *argv[]) {
@@ -224,10 +249,24 @@ int main(int argc, char *argv[]) {
 
     int i, pgmraw, nbRows, nbCols, maxval;
     gray *graymap ;
+    int* histogram, *cumulative_histogram;
 
      /**Read**/
     pgmraw = readPGM(file, &graymap, &nbCols, &nbRows, &maxval);
     
+    histogram = compute_histogram(graymap, nbCols, nbRows, maxval);
+    cumulative_histogram = compute_cumulative_histogram(histogram, maxval);
+
+    for(int p=0; p<maxval; p++){
+        printf("%d ", histogram[p]);
+    }
+
+    for(int p=0; p<maxval; p++){
+        printf("%d ", cumulative_histogram[p]);
+    }
+
+
+
     /**Copy**/
     gray* result = malloc(sizeof(gray)*nbCols*nbRows);
 
@@ -248,5 +287,6 @@ int main(int argc, char *argv[]) {
     } else {
         writeInFile(newImage, graymap, pgmraw, nbCols, nbRows, maxval) ;
     }
+
     return 0;
 }
