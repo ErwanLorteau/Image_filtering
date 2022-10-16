@@ -95,7 +95,7 @@ int compar (const void * a, const void * b)
 * The function uses quick sort to sort the array and returns the value in the middle */
 int median(int* filter, int filter_size){
     qsort(filter, filter_size*filter_size, sizeof(int), compar);
-    return filter[filter_size/2];
+    return filter[(filter_size*filter_size)/2];
 }
 
 /* Applies a filter of size filter_size (3 or 5) on a pixel */
@@ -180,9 +180,9 @@ FILE *createFile(char *name) {
 void writeInFile(FILE *fp, gray* graymap, int pgmraw, int nbCols, int nbRows, int maxval) {
 
     if(pgmraw)
-       fprintf(fp, "P2\n");
+       fprintf(fp, "P5\n");
     else
-        fprintf(fp, "P5\n");
+        fprintf(fp, "P2\n");
 
     fprintf(fp, "%d %d \n", nbCols, nbRows);
     fprintf(fp, "%d\n",maxval);
@@ -190,9 +190,9 @@ void writeInFile(FILE *fp, gray* graymap, int pgmraw, int nbCols, int nbRows, in
     for(int i=0; i < nbRows; i++)
       for(int j=0; j < nbCols ; j++){
         if(pgmraw)
-           fprintf(fp,"%d ", graymap[i * nbCols + j]);
+           fprintf(fp,"%c", graymap[i * nbCols + j]);
         else
-            fprintf(fp,"%c",graymap[i * nbCols + j]);
+            fprintf(fp,"%d",graymap[i * nbCols + j]);
       }
 
     /* Closing */
